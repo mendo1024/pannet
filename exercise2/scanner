@@ -16,7 +16,7 @@ if [ -f $TRACKER_DIR/$IP ]; then
         cat $TMP_FILE > $TRACKER_DIR/$IP
 else
         echo $IP": No history found"
-        NEW=`cat TMP_FILE`
+        NEW=`cat $TMP_FILE`
         if [[ -z "$NEW" ]]; then
                 echo $IP": No ports open"
                 touch $TRACKER_DIR/$IP
