@@ -1,0 +1,61 @@
+#!/bin/bash
+#set -x
+TRACKER_DIR="tracker"
+scan(){
+TMP_FILE=$(mktemp /tmp/scanner-new-XXX)
+echo $IP": Scanning..."
+/bin/nc -v -z -w 1 $IP 1-100 2>&1 | grep "succeeded!" | awk '{print $4}' | sort -n > $TMP_FILE
+if [ -f $TRACKER_DIR/$IP ]; then
+        DIFF=`diff $TRACKER_DIR/$IP $TMP_FILE | grep -E "<|>"`
+        if [ -z "$DIFF" ]; then
+                echo $IP": No changes since last scan"
+        else
+                echo $IP": Changes since last scan:"
+                echo $DIFF
+        fi
+        cat $TMP_FILE > $TRACKER_DIR/$IP
+else
+        echo $IP": No history found"
+        NEW=`cat TMP_FILE`
+        if [[ -z "$NEW" ]]; then
+                echo $IP": No ports open"
+                touch $TRACKER_DIR/$IP
+        else
+                cat $TMP_FILE
+                cat $TMP_FILE > $TRACKER_DIR/$IP
+        fi
+fi
+rm -f $TMP_FILE
+}
+[[ ! -d $TRACKER_DIR ]] && mkdir $TRACKER_DIR
+if [ "$#" -eq 0 ]; then
+    echo "Give single IP, single FQDN or range (IP IP, NET/##)"
+    exit
+else
+        if [ "$#" -eq 1 ]; then
+                if [[ $1 == *"/"* ]]; then
+                        TMP_RANGE_FILE=$(mktemp /tmp/scanner-range-XXX)
+                        prips $1  > $TMP_RANGE_FILE
+                        for IP in `cat $TMP_RANGE_FILE`;do
+                                scan
+                        done
+                        rm -f $TMP_RANGE_FILE
+                        exit
+                else
+                        IP=$1
+                        scan
+                        exit
+                fi
+        fi
+        if [ "$#" -eq 2 ]; then
+                 TMP_RANGE_FILE=$(mktemp /tmp/scanner-range-XXX)
+                 prips $1 $2 > $TMP_RANGE_FILE
+                 for IP in `cat $TMP_RANGE_FILE`;do
+                        scan
+                 done
+                 rm -f $TMP_RANGE_FILE
+                 exit
+        else
+                echo "Give single IP, single FQDN or range (IP IP, NET/##)"
+        fi
+fi

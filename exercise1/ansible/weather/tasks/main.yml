@@ -1,0 +1,39 @@
+---
+# tasks file for weather
+- name: python-pip and docker are installed
+  apt:
+          name: python-pip,docker.io
+          update_cache: no
+          state: present
+- name: pyowm is installed
+  pip:
+          name: pyowm
+- name: rsyslog port
+  lineinfile:
+          path: /etc/rsyslog.conf
+          insertafter: '# provides UDP syslog reception'
+          line: 'input(type="imudp" port="514")'
+- name: rsyslog module
+  lineinfile:
+          path: /etc/rsyslog.conf
+          insertafter: '# provides UDP syslog reception'
+          line: 'module(load="imudp")'
+- name: rsyslog reload
+  service:
+          name: rsyslog
+          state: restarted
+- name: docker config dir
+  file:
+          path: /etc/docker
+          state: directory
+          owner: root
+          group: root
+          mode: 0755
+- name: docker logs to host's syslog
+  copy:
+          src: docker.daemon.json
+          dest: /etc/docker/daemon.json
+          owner: root
+          group: root
+          mode: 0644
+  notify: docker_bounce

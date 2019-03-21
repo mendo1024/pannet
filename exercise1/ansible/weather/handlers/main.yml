@@ -1,0 +1,4 @@
+---
+# handlers file for weather
+- name: docker_bounce
+  systemd: name=docker.service state=restarted
